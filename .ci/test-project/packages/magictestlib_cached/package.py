@@ -66,15 +66,10 @@ class MagictestlibCached(CachedCMakePackage):
 
     def url_for_version(self, version):
         dummy_tar_path = os.path.abspath(os.path.join(__file__, "../../magictestlib.tar.gz"))
-        url = "file://" + dummy_tar_path
-        return url
+        return f"file://{dummy_tar_path}"
 
     def _get_sys_type(self, spec):
-        sys_type = spec.architecture
-        # if on llnl systems, we can use the SYS_TYPE
-        if "SYS_TYPE" in env:
-            sys_type = env["SYS_TYPE"]
-        return sys_type
+        return env["SYS_TYPE"] if "SYS_TYPE" in env else spec.architecture
 
     @property
     def cache_name(self):
@@ -91,13 +86,9 @@ class MagictestlibCached(CachedCMakePackage):
 
     def initconfig_package_entries(self):
         spec = self.spec
-        entries = []
-
-        # TPL locations
-        entries.append("#------------------{0}".format("-" * 60))
-        entries.append("# TPLs")
-        entries.append("#------------------{0}\n".format("-" * 60))
-
-        entries.append(cmake_cache_path('HDF5_DIR', spec["hdf5"].prefix))
-
-        return entries
+        return [
+            "#------------------{0}".format("-" * 60),
+            "# TPLs",
+            "#------------------{0}\n".format("-" * 60),
+            cmake_cache_path('HDF5_DIR', spec["hdf5"].prefix),
+        ]

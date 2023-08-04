@@ -59,10 +59,7 @@ def cmake_cache_entry(name, value, vtype=None):
     'host-config' files.
     """
     if vtype is None:
-        if value == "ON" or value == "OFF":
-            vtype = "BOOL"
-        else:
-            vtype = "PATH"
+        vtype = "BOOL" if value in ["ON", "OFF"] else "PATH"
     return 'set({0} "{1}" CACHE {2} "")\n\n'.format(name, value, vtype)
 
 
@@ -84,23 +81,17 @@ class Magictestlib(Package):
 
     def url_for_version(self, version):
         dummy_tar_path = os.path.abspath(os.path.join(__file__, "../../magictestlib.tar.gz"))
-        url = "file://" + dummy_tar_path
-        return url
+        return f"file://{dummy_tar_path}"
 
 
     def _get_host_config_path(self, spec):
-        sys_type = spec.architecture
-        # if on llnl systems, we can use the SYS_TYPE
-        if "SYS_TYPE" in env:
-            sys_type = env["SYS_TYPE"]
+        sys_type = env["SYS_TYPE"] if "SYS_TYPE" in env else spec.architecture
         host_config_path = "{0}-{1}-{2}-magictestlib-{3}.cmake".format(socket.gethostname(),
                                                                   sys_type,
                                                                   spec.compiler,
                                                                   spec.dag_hash())
         dest_dir = spec.prefix
-        host_config_path = os.path.abspath(join_path(dest_dir,
-                                                     host_config_path))
-        return host_config_path
+        return os.path.abspath(join_path(dest_dir, host_config_path))
 
     def hostconfig(self, spec, prefix):
         """
@@ -122,33 +113,31 @@ class Magictestlib(Package):
         # get hostconfig name
         host_cfg_fname = self._get_host_config_path(spec)
 
-        cfg = open(host_cfg_fname, "w")
-        cfg.write("##################################\n")
-        cfg.write("# spack generated host-config\n")
-        cfg.write("##################################\n")
-        #######################
-        # Spack Compiler info
-        #######################
-        cfg.write("#######\n")
-        cfg.write("# using %s compiler spec\n" % spec.compiler)
-        cfg.write("#######\n\n")
-        cfg.write("# c compiler used by spack\n")
-        cfg.write(cmake_cache_entry("CMAKE_C_COMPILER", c_compiler))
-        cfg.write("# cpp compiler used by spack\n")
-        cfg.write(cmake_cache_entry("CMAKE_CXX_COMPILER", cpp_compiler))
+        with open(host_cfg_fname, "w") as cfg:
+            cfg.write("##################################\n")
+            cfg.write("# spack generated host-config\n")
+            cfg.write("##################################\n")
+            #######################
+            # Spack Compiler info
+            #######################
+            cfg.write("#######\n")
+            cfg.write("# using %s compiler spec\n" % spec.compiler)
+            cfg.write("#######\n\n")
+            cfg.write("# c compiler used by spack\n")
+            cfg.write(cmake_cache_entry("CMAKE_C_COMPILER", c_compiler))
+            cfg.write("# cpp compiler used by spack\n")
+            cfg.write(cmake_cache_entry("CMAKE_CXX_COMPILER", cpp_compiler))
 
-        ######
-        # ZLIB
-        cfg.write(cmake_cache_entry("ZLIB_DIR", spec['zlib'].prefix))
+            ######
+            # ZLIB
+            cfg.write(cmake_cache_entry("ZLIB_DIR", spec['zlib'].prefix))
 
-        #######################
-        # Finish host-config
-        #######################
-        cfg.write("##################################\n")
-        cfg.write("# end spack generated host-config\n")
-        cfg.write("##################################\n")
-        cfg.close()
-
+            #######################
+            # Finish host-config
+            #######################
+            cfg.write("##################################\n")
+            cfg.write("# end spack generated host-config\n")
+            cfg.write("##################################\n")
         host_cfg_fname = os.path.abspath(host_cfg_fname)
-        tty.info("spack generated host-config file: " + host_cfg_fname)
+        tty.info(f"spack generated host-config file: {host_cfg_fname}")
 
